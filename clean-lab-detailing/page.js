@@ -3,13 +3,27 @@ const root = document.documentElement;
 const { body } = document;
 const bar = document.querySelector('[data-sticky-bar]');
 const hero = document.querySelector('[data-hero]');
+const barSend = bar && bar.querySelector('.is-primary');
+const barLabel = barSend && barSend.querySelector('span');
+const barText = barLabel && barLabel.textContent;
+let heroGone = false;
+let sendShown = false;
+const syncBar = () => bar.classList.toggle('is-visible', heroGone && !sendShown);
 if (bar && hero && 'IntersectionObserver' in window) {
 new IntersectionObserver(([entry]) => {
-bar.classList.toggle(
-'is-visible',
-!entry.isIntersecting && entry.boundingClientRect.bottom <= 0,
-);
+heroGone = !entry.isIntersecting && entry.boundingClientRect.bottom <= 0;
+syncBar();
 }).observe(hero);
+const pickerSend = document.querySelector('.picker_actions');
+if (pickerSend) {
+new IntersectionObserver(
+([entry]) => {
+sendShown = entry.isIntersecting;
+syncBar();
+},
+{ rootMargin: '0px 0px -80px 0px' },
+).observe(pickerSend);
+}
 }
 let tick = 0;
 const onScroll = () => {
@@ -222,6 +236,10 @@ message && send.dataset.base
 : send.dataset.plain;
 if (message) sendLabel.textContent = send.dataset.labelSend;
 else sendLabel.innerHTML = plainLabel;
+if (barSend && send.dataset.base) {
+barSend.href = send.href;
+barLabel.textContent = message ? 'Отправить' : barText;
+}
 if (copy) copy.hidden = !message;
 };
 const toggle = (chip, on) => {
@@ -256,18 +274,22 @@ choose(next);
 });
 });
 if (copy) {
+const note = one('[data-picker-copy-status]');
 const select = () => {
 const range = document.createRange();
 range.selectNodeContents(bubble);
 const selection = window.getSelection();
 selection.removeAllRanges();
 selection.addRange(range);
+note.textContent = 'Не получилось скопировать. Текст выделен, скопируйте вручную.';
 };
 copy.addEventListener('click', () => {
 const done = () => {
 copy.textContent = 'Скопировано';
+note.textContent = 'Сообщение скопировано';
 window.setTimeout(() => {
 copy.textContent = 'Скопировать';
+note.textContent = '';
 }, 2000);
 };
 if (window.navigator.clipboard) {
